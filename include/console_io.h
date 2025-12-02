@@ -40,4 +40,11 @@ void PrintError(const char* msg);
  */
 void ClearScreen();
 
+/**
+ * @brief Displays help message with usage information
+ * @details Shows all available command-line options and usage examples
+ *          for the three operation modes (batch, advanced CLI, interactive)
+ */
+void ShowHelp();
+
 #endif

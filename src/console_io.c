@@ -77,3 +77,51 @@ void ClearScreen() {
     /* Reset cursor to top-left corner (home position) */
     SetConsoleCursorPosition(hStdOut, homeCoords);
 }
+
+/**
+ * @brief Displays comprehensive help message for WinPass-Native
+ * @details Shows usage information for all three modes with examples
+ */
+void ShowHelp() {
+    ConsoleWrite("========================================\r\n");
+    ConsoleWrite("WinPass-Native v2.0.0\r\n");
+    ConsoleWrite("Secure Password Generator\r\n");
+    ConsoleWrite("========================================\r\n\r\n");
+    
+    ConsoleWrite("USAGE:\r\n\r\n");
+    
+    /* Mode 1: Legacy Batch */
+    ConsoleWrite("  1. Legacy Batch Mode:\r\n");
+    ConsoleWrite("     WinPass.exe <length>\r\n");
+    ConsoleWrite("     Example: WinPass.exe 16\r\n");
+    ConsoleWrite("     Generates password with specified length (symbols enabled)\r\n\r\n");
+    
+    /* Mode 2: Advanced CLI */
+    ConsoleWrite("  2. Advanced CLI Mode:\r\n");
+    ConsoleWrite("     WinPass.exe [OPTIONS]\r\n\r\n");
+    ConsoleWrite("     OPTIONS:\r\n");
+    ConsoleWrite("       --letters=N, -l=N    Number of letter characters (default: 8)\r\n");
+    ConsoleWrite("       --numbers=N, -n=N    Number of numeric characters (default: 4)\r\n");
+    ConsoleWrite("       --symbols=N, -s=N    Number of symbol characters (default: 4)\r\n");
+    ConsoleWrite("       --no-letters         Disable letters\r\n");
+    ConsoleWrite("       --no-numbers         Disable numbers\r\n");
+    ConsoleWrite("       --no-symbols         Disable symbols\r\n");
+    ConsoleWrite("       --help, -h, /?       Show this help message\r\n\r\n");
+    ConsoleWrite("     Examples:\r\n");
+    ConsoleWrite("       WinPass.exe --letters=10 --numbers=5 --symbols=5\r\n");
+    ConsoleWrite("       WinPass.exe --no-symbols --letters=12 --numbers=4\r\n");
+    ConsoleWrite("       WinPass.exe -l=8 -n=8 -s=0\r\n\r\n");
+    
+    /* Mode 3: Interactive */
+    ConsoleWrite("  3. Interactive Mode:\r\n");
+    ConsoleWrite("     WinPass.exe\r\n");
+    ConsoleWrite("     Runs without arguments to launch interactive menu\r\n\r\n");
+    
+    ConsoleWrite("FEATURES:\r\n");
+    ConsoleWrite("  - Cryptographically secure random generation (CryptoAPI)\r\n");
+    ConsoleWrite("  - Automatic clipboard copy\r\n");
+    ConsoleWrite("  - Customizable character categories\r\n");
+    ConsoleWrite("  - Fisher-Yates shuffle for uniform distribution\r\n\r\n");
+    
+    ConsoleWrite("========================================\r\n");
+}

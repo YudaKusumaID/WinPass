@@ -39,6 +39,21 @@ int main() {
     /* Parse Windows command line into argument array */
     szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 
+    /* Check for help flag before mode detection */
+    if (NULL != szArglist && nArgs > 1) {
+        /* Scan all arguments for help flags */
+        for (int i = 1; i < nArgs; i++) {
+            if (WStrEquals(szArglist[i], "--help") || 
+                WStrEquals(szArglist[i], "-h") ||
+                WStrEquals(szArglist[i], "/?") ||
+                WStrEquals(szArglist[i], "-?")) {
+                ShowHelp();
+                if (szArglist) LocalFree(szArglist);
+                return 0;
+            }
+        }
+    }
+
     if (NULL != szArglist && nArgs > 1) {
         /*
          * Arguments detected - determine if legacy batch or advanced CLI mode
