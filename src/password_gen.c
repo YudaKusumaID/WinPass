@@ -1,0 +1,232 @@
+/**
+ * @file password_gen.c
+ * @brief Password generation core logic implementation
+ * @details Implements cryptographically secure password generation using Windows
+ *          CryptoAPI (CryptGenRandom). Supports both simple and advanced multi-charset
+ *          generation modes with Fisher-Yates shuffling for uniform distribution.
+ */
+
+#include "../include/password_gen.h"
+#include "../include/console_io.h"
+
+/**
+ * @brief Copies generated password to Windows clipboard
+ * @param text Password string to copy
+ * @param length Length of password (without null terminator)
+ */
+void CopyToClipboard(const char* text, int length) {
+    if (!OpenClipboard(NULL)) return;
+    EmptyClipboard();
+    
+    /* Allocate moveable global memory for clipboard data */
+    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, length + 1);
+    if (hGlob) {
+        char* pData = (char*)GlobalLock(hGlob);
+        if (pData) {
+            /* Manual copy to avoid CRT dependencies */
+            for(int i=0; i<length; i++) pData[i] = text[i];
+            pData[length] = 0;  /* Null terminator */
+            GlobalUnlock(hGlob);
+            
+            /* Transfer ownership to clipboard; if successful, don't free hGlob */
+            if (!SetClipboardData(CF_TEXT, hGlob)) GlobalFree(hGlob);
+            else ConsoleWrite("[INFO] Copied to Clipboard.\r\n");
+        }
+    }
+    CloseClipboard();
+}
+
+/**
+ * @brief Shuffles password characters using Fisher-Yates algorithm
+ * @param password Password string to shuffle in-place
+ * @param length Length of password
+ * @param hCryptProv Cryptographic context for secure random bytes
+ */
+void ShufflePassword(char* password, int length, HCRYPTPROV hCryptProv) {
+    BYTE* randomBytes = (BYTE*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, length);
+    if (!randomBytes || !CryptGenRandom(hCryptProv, length, randomBytes)) {
+        if (randomBytes) HeapFree(GetProcessHeap(), 0, randomBytes);
+        return;
+    }
+
+    /* 
+     * Fisher-Yates shuffle algorithm (modern variant)
+     * Guarantees uniform distribution when using cryptographically secure random
+     * Iterates backwards from last element to second element
+     */
+    for (int i = length - 1; i > 0; i--) {
+        /* Generate random index j where 0 <= j <= i */
+        int j = randomBytes[i] % (i + 1);
+        
+        /* Swap password[i] with password[j] */
+        char temp = password[i];
+        password[i] = password[j];
+        password[j] = temp;
+    }
+
+    HeapFree(GetProcessHeap(), 0, randomBytes);
+}
+
+/**
+ * @brief Generates password with simple configuration (legacy/batch mode)
+ * @param length Total password length
+ * @param useSymbols TRUE to include symbols, FALSE for alphanumeric only
+ */
+void GenerateCore(int length, BOOL useSymbols) {
+    HCRYPTPROV hCryptProv = 0;
+    HANDLE hHeap = GetProcessHeap();
+    BYTE* pbBuffer = NULL;
+    char* passwordString = NULL;
+
+    const char* currentCharset = useSymbols ? CHARSET_FULL : CHARSET_ALPHANUM;
+    int charsetLen = lstrlenA(currentCharset);
+    char msgBuf[100];
+
+    pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, length);
+    passwordString = (char*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, length + 1);
+
+    if (!pbBuffer || !passwordString) {
+        PrintError("Memory Error");
+        return;
+    }
+
+    /* Acquire cryptographic context for secure random generation */
+    if (CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        if (CryptGenRandom(hCryptProv, length, pbBuffer)) {
+            /* Map random bytes to charset using modulo (acceptable bias for large charsets) */
+            for (int i = 0; i < length; i++) {
+                passwordString[i] = currentCharset[pbBuffer[i] % charsetLen];
+            }
+            passwordString[length] = '\0';
+
+            wsprintfA(msgBuf, "\r\n>> RESULT (%d chars): %s\r\n", length, passwordString);
+            ConsoleWrite(msgBuf);
+            CopyToClipboard(passwordString, length);
+        } else {
+            PrintError("GenRandom Failed");
+        }
+        CryptReleaseContext(hCryptProv, 0);
+    } else {
+        PrintError("Crypto Context Failed");
+    }
+
+    HeapFree(hHeap, 0, pbBuffer);
+    HeapFree(hHeap, 0, passwordString);
+}
+
+/**
+ * @brief Generates password with advanced per-category configuration
+ * @param letterCount Number of letter characters
+ * @param numberCount Number of numeric characters
+ * @param symbolCount Number of symbol characters
+ * @param useLetters Enable/disable letters category
+ * @param useNumbers Enable/disable numbers category
+ * @param useSymbols Enable/disable symbols category
+ */
+void GenerateAdvanced(int letterCount, int numberCount, int symbolCount,
+                      BOOL useLetters, BOOL useNumbers, BOOL useSymbols) {
+    HCRYPTPROV hCryptProv = 0;
+    HANDLE hHeap = GetProcessHeap();
+    BYTE* pbBuffer = NULL;
+    char* passwordString = NULL;
+    char msgBuf[256];
+
+    /* Validate that at least one category is enabled */
+    if (!useLetters && !useNumbers && !useSymbols) {
+        ConsoleWrite("\r\n[ERROR] At least one character type must be enabled!\r\n");
+        ConsoleWrite("Press Enter to continue...");
+        char dummy[10];
+        ConsoleRead(dummy, sizeof(dummy));
+        return;
+    }
+
+    /* Calculate total password length from enabled categories */
+    int totalLength = 0;
+    if (useLetters) totalLength += letterCount;
+    if (useNumbers) totalLength += numberCount;
+    if (useSymbols) totalLength += symbolCount;
+
+    if (totalLength <= 0) {
+        ConsoleWrite("\r\n[ERROR] Total password length must be greater than 0!\r\n");
+        ConsoleWrite("Press Enter to continue...");
+        char dummy[10];
+        ConsoleRead(dummy, sizeof(dummy));
+        return;
+    }
+
+    pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength);
+    passwordString = (char*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength + 1);
+
+    if (!pbBuffer || !passwordString) {
+        PrintError("Memory Error");
+        return;
+    }
+
+    if (CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        if (CryptGenRandom(hCryptProv, totalLength, pbBuffer)) {
+            int pos = 0;  /* Current write position in password string */
+
+            /* 
+             * Phase 1: Assemble password from separate character categories
+             * Each category uses its own section of the random buffer
+             */
+            
+            if (useLetters && letterCount > 0) {
+                int lettersLen = lstrlenA(CHARSET_LETTERS);
+                /* Use first letterCount bytes of random buffer for letters */
+                for (int i = 0; i < letterCount; i++) {
+                    passwordString[pos++] = CHARSET_LETTERS[pbBuffer[i] % lettersLen];
+                }
+            }
+
+            if (useNumbers && numberCount > 0) {
+                int numbersLen = lstrlenA(CHARSET_NUMBERS);
+                /* Offset into random buffer to avoid reusing bytes from letters */
+                int offset = useLetters ? letterCount : 0;
+                for (int i = 0; i < numberCount; i++) {
+                    passwordString[pos++] = CHARSET_NUMBERS[pbBuffer[offset + i] % numbersLen];
+                }
+            }
+
+            if (useSymbols && symbolCount > 0) {
+                int symbolsLen = lstrlenA(CHARSET_SYMBOLS);
+                /* Calculate offset to skip previously used random bytes */
+                int offset = 0;
+                if (useLetters) offset += letterCount;
+                if (useNumbers) offset += numberCount;
+                for (int i = 0; i < symbolCount; i++) {
+                    passwordString[pos++] = CHARSET_SYMBOLS[pbBuffer[offset + i] % symbolsLen];
+                }
+            }
+
+            passwordString[totalLength] = '\0';
+
+            /*
+             * Phase 2: Shuffle to eliminate predictable category ordering
+             * Without shuffling, password would be [letters][numbers][symbols]
+             */
+            ShufflePassword(passwordString, totalLength, hCryptProv);
+
+            wsprintfA(msgBuf, "\r\n>> RESULT (%d chars: L=%d N=%d S=%d): %s\r\n",
+                      totalLength,
+                      useLetters ? letterCount : 0,
+                      useNumbers ? numberCount : 0,
+                      useSymbols ? symbolCount : 0,
+                      passwordString);
+            ConsoleWrite(msgBuf);
+            CopyToClipboard(passwordString, totalLength);
+            
+            ConsoleWrite("\r\nPress Enter to continue...");
+            char dummy[10];
+            ConsoleRead(dummy, sizeof(dummy));
+        } else {
+            PrintError("GenRandom Failed");
+        }
+        CryptReleaseContext(hCryptProv, 0);
+    } else {
+        PrintError("Crypto Context Failed");
+    }
+
+    HeapFree(hHeap, 0, pbBuffer);
+    HeapFree(hHeap, 0, passwordString);
+}
