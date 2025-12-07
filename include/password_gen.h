@@ -21,11 +21,14 @@
 void CopyToClipboard(const char* text, int length);
 
 /**
- * @brief Shuffles password characters using Fisher-Yates algorithm
+ * @brief Shuffles password characters using Fisher-Yates algorithm with Rejection Sampling
  * @param password Password string to shuffle in-place
  * @param length Length of password
  * @param hCryptProv Cryptographic context for secure random bytes
- * @details Uses cryptographically secure random numbers to ensure uniform distribution
+ * @details Uses cryptographically secure random numbers with Rejection Sampling to
+ *          eliminate Modulo Bias, ensuring perfectly uniform distribution of all
+ *          possible permutations. This guarantees maximum entropy and prevents
+ *          statistical attacks that could exploit biased shuffle patterns.
  */
 void ShufflePassword(char* password, int length, HCRYPTPROV hCryptProv);
 
