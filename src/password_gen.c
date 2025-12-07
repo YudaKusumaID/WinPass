@@ -75,8 +75,6 @@ void ShufflePassword(char* password, int length, HCRYPTPROV hCryptProv) {
          *   - Values [4294967280, 4294967295] would cause bias (rejected)
          */
         dwThreshold = MAXDWORD - (MAXDWORD % dwRange);
-        return;
-        ConsoleWrite(dwThreshold);
 
         /*
          * Rejection Sampling Loop
