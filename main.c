@@ -70,8 +70,15 @@ int main() {
 
         if (isLegacyBatch) {
             /* MODE 1: LEGACY BATCH MODE - single numeric arg without flags */
+            
+            if (!IsWStrNumeric(szArglist[1])) {
+                ConsoleWrite("[ERROR] Invalid argument. Expected a number for password length.\r\n");
+                ConsoleWrite("Use --help to see available options.\r\n");
+                if (szArglist) LocalFree(szArglist);
+                return 1;
+            }
+            
             int batchLength = SimpleWStrToInt(szArglist[1]);
-            if (batchLength <= 0) batchLength = DEFAULT_BATCH_LENGTH;  /* Fallback to safe default */
 
             ConsoleWrite("WinPass-Native (Batch Mode)\r\n");
             GenerateCore(batchLength, TRUE); /* Default symbols enabled for batch */

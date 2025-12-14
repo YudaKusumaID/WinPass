@@ -46,17 +46,28 @@ BOOL ParseArguments(LPWSTR* args, int count, PasswordConfig* config) {
         /* Length configuration: parse value after '=' delimiter */
         else if (WStrStartsWith(arg, "--letters=") || WStrStartsWith(arg, "-l=")) {
             int val = ExtractValueFromArg(arg);
-            /* Bounds check to prevent integer overflow or unreasonable values */
+            if (val == -2) {
+                ConsoleWrite("[ERROR] Invalid value for --letters. Expected a number.\r\n");
+                return FALSE;
+            }
             if (val >= 0 && val < MAX_CATEGORY_LENGTH) config->letterLength = val;
             recognized = TRUE;
         }
         else if (WStrStartsWith(arg, "--numbers=") || WStrStartsWith(arg, "-n=")) {
             int val = ExtractValueFromArg(arg);
+            if (val == -2) {
+                ConsoleWrite("[ERROR] Invalid value for --numbers. Expected a number.\r\n");
+                return FALSE;
+            }
             if (val >= 0 && val < MAX_CATEGORY_LENGTH) config->numberLength = val;
             recognized = TRUE;
         }
         else if (WStrStartsWith(arg, "--symbols=") || WStrStartsWith(arg, "-s=")) {
             int val = ExtractValueFromArg(arg);
+            if (val == -2) {
+                ConsoleWrite("[ERROR] Invalid value for --symbols. Expected a number.\r\n");
+                return FALSE;
+            }
             if (val >= 0 && val < MAX_CATEGORY_LENGTH) config->symbolLength = val;
             recognized = TRUE;
         }

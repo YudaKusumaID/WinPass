@@ -53,4 +53,11 @@ BOOL WStrStartsWith(const WCHAR* wstr, const char* prefix);
  */
 int ExtractValueFromArg(const WCHAR* arg);
 
+/**
+ * @brief Checks if wide string contains only numeric digits
+ * @param wstr Wide character string to validate
+ * @return TRUE if string contains only digits (0-9), FALSE otherwise
+ */
+BOOL IsWStrNumeric(const WCHAR* wstr);
+
 #endif
