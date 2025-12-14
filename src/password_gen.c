@@ -120,6 +120,15 @@ void GenerateCore(int length, BOOL useSymbols) {
     /* Buffer sized for max password + formatting overhead */
     char msgBuf[MAX_PASSWORD_LENGTH + 64];
 
+    if (length < MIN_PASSWORD_LENGTH) {
+        wsprintfA(msgBuf, "\r\n[ERROR] Password length must be at least %d characters!\r\n", MIN_PASSWORD_LENGTH);
+        ConsoleWrite(msgBuf);
+        ConsoleWrite("Press Enter to continue...");
+        char dummy[10];
+        ConsoleRead(dummy, sizeof(dummy));
+        return;
+    }
+
     pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, length);
     if (!pbBuffer) {
         PrintError("Memory Error");
@@ -189,14 +198,6 @@ void GenerateAdvanced(int letterCount, int numberCount, int symbolCount,
     if (useLetters) totalLength += letterCount;
     if (useNumbers) totalLength += numberCount;
     if (useSymbols) totalLength += symbolCount;
-
-    if (totalLength <= 0) {
-        ConsoleWrite("\r\n[ERROR] Total password length must be greater than 0!\r\n");
-        ConsoleWrite("Press Enter to continue...");
-        char dummy[10];
-        ConsoleRead(dummy, sizeof(dummy));
-        return;
-    }
 
     /* Validate minimum password length for security */
     if (totalLength < MIN_PASSWORD_LENGTH) {
