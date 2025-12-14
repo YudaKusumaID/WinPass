@@ -29,10 +29,11 @@ typedef struct {
  * @param args Array of wide-character argument strings from CommandLineToArgvW()
  * @param count Number of arguments in the array
  * @param config Output structure to populate with parsed configuration
+ * @return TRUE if all arguments are valid, FALSE if an invalid flag was found
  * @details Recognizes flags: --no-letters, --no-numbers, --no-symbols,
  *          --letters=N, --numbers=N, --symbols=N (and short forms -l=, -n=, -s=).
  *          Applies default values before processing arguments.
  */
-void ParseArguments(LPWSTR* args, int count, PasswordConfig* config);
+BOOL ParseArguments(LPWSTR* args, int count, PasswordConfig* config);
 
 #endif

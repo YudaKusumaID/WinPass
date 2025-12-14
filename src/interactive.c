@@ -11,6 +11,22 @@
 #include "../include/utils.h"
 
 /**
+ * @brief Validates if a string contains only numeric digits
+ * @param str Null-terminated string to validate
+ * @return TRUE if string contains only digits, FALSE otherwise
+ */
+static BOOL IsNumericInput(const char* str) {
+    /* Empty string is not valid numeric input */
+    if (*str == '\0') return FALSE;
+    
+    while (*str != '\0') {
+        if (*str < '0' || *str > '9') return FALSE;
+        str++;
+    }
+    return TRUE;
+}
+
+/**
  * @brief Runs the interactive menu mode with full configuration options
  * @details Main loop that displays menu, handles user input, and updates settings
  */
@@ -64,65 +80,114 @@ void RunInteractiveMode() {
         ConsoleWrite("Select > ");
 
         /* Read and process user choice */
-        if (ConsoleRead(inputBuf, sizeof(inputBuf)) > 0) {
-            char choice = inputBuf[0];  /* First character is the menu selection */
+        int readLen = ConsoleRead(inputBuf, sizeof(inputBuf));
+        if (readLen > 0) {
+            /* Convert input to integer and validate range 1-8 */
+            int choice = SimpleStrToInt(inputBuf);
+            
+            if (choice < 1 || choice > 8) {
+                /* Invalid choice: outside valid range or non-numeric */
+                ConsoleWrite("\r\n[ERROR] Invalid option! Please select 1-8.\r\n");
+                ConsoleWrite("Press Enter to continue...");
+                ConsoleRead(inputBuf, sizeof(inputBuf));
+                continue;
+            }
 
             switch (choice) {
-                case '1':
+                case 1:
                     /* Generate password with current configuration */
                     GenerateAdvanced(letterLength, numberLength, symbolLength,
                                    useLetters, useNumbers, useSymbols);
                     break;
                     
                 /* Toggle options: flip boolean state */
-                case '2':
+                case 2:
                     useLetters = !useLetters;
                     break;
-                case '3':
+                case 3:
                     useNumbers = !useNumbers;
                     break;
-                case '4':
+                case 4:
                     useSymbols = !useSymbols;
                     break;
                     
-                /* Length configuration options: prompt for new value */
-                case '5': {
+                /* Length configuration options: prompt for new value with validation */
+                case 5: {
                     ClearScreen();
-                    ConsoleWrite("Enter letter length: ");
-                    ConsoleRead(inputBuf, sizeof(inputBuf));
-                    int newLen = SimpleStrToInt(inputBuf);
-                    /* Validate range to prevent negative or excessive lengths */
-                    if (newLen >= 0 && newLen < 1024) letterLength = newLen;
+                    wsprintfA(displayBuf, "Enter letter length (0-%d): ", MAX_CATEGORY_LENGTH - 1);
+                    ConsoleWrite(displayBuf);
+                    if (ConsoleRead(inputBuf, sizeof(inputBuf)) > 0) {
+                        if (!IsNumericInput(inputBuf)) {
+                            ConsoleWrite("[ERROR] Please enter a valid number!\r\n");
+                            ConsoleWrite("Press Enter to continue...");
+                            ConsoleRead(inputBuf, sizeof(inputBuf));
+                        } else {
+                            int newLen = SimpleStrToInt(inputBuf);
+                            if (newLen >= 0 && newLen < MAX_CATEGORY_LENGTH) {
+                                letterLength = newLen;
+                            } else {
+                                wsprintfA(displayBuf, "[ERROR] Length must be between 0 and %d!\r\n", MAX_CATEGORY_LENGTH - 1);
+                                ConsoleWrite(displayBuf);
+                                ConsoleWrite("Press Enter to continue...");
+                                ConsoleRead(inputBuf, sizeof(inputBuf));
+                            }
+                        }
+                    }
                     break;
                 }
-                case '6': {
+                case 6: {
                     ClearScreen();
-                    ConsoleWrite("Enter number length: ");
-                    ConsoleRead(inputBuf, sizeof(inputBuf));
-                    int newLen = SimpleStrToInt(inputBuf);
-                    if (newLen >= 0 && newLen < 1024) numberLength = newLen;
+                    wsprintfA(displayBuf, "Enter number length (0-%d): ", MAX_CATEGORY_LENGTH - 1);
+                    ConsoleWrite(displayBuf);
+                    if (ConsoleRead(inputBuf, sizeof(inputBuf)) > 0) {
+                        if (!IsNumericInput(inputBuf)) {
+                            ConsoleWrite("[ERROR] Please enter a valid number!\r\n");
+                            ConsoleWrite("Press Enter to continue...");
+                            ConsoleRead(inputBuf, sizeof(inputBuf));
+                        } else {
+                            int newLen = SimpleStrToInt(inputBuf);
+                            if (newLen >= 0 && newLen < MAX_CATEGORY_LENGTH) {
+                                numberLength = newLen;
+                            } else {
+                                wsprintfA(displayBuf, "[ERROR] Length must be between 0 and %d!\r\n", MAX_CATEGORY_LENGTH - 1);
+                                ConsoleWrite(displayBuf);
+                                ConsoleWrite("Press Enter to continue...");
+                                ConsoleRead(inputBuf, sizeof(inputBuf));
+                            }
+                        }
+                    }
                     break;
                 }
-                case '7': {
+                case 7: {
                     ClearScreen();
-                    ConsoleWrite("Enter symbol length: ");
-                    ConsoleRead(inputBuf, sizeof(inputBuf));
-                    int newLen = SimpleStrToInt(inputBuf);
-                    if (newLen >= 0 && newLen < 1024) symbolLength = newLen;
+                    wsprintfA(displayBuf, "Enter symbol length (0-%d): ", MAX_CATEGORY_LENGTH - 1);
+                    ConsoleWrite(displayBuf);
+                    if (ConsoleRead(inputBuf, sizeof(inputBuf)) > 0) {
+                        if (!IsNumericInput(inputBuf)) {
+                            ConsoleWrite("[ERROR] Please enter a valid number!\r\n");
+                            ConsoleWrite("Press Enter to continue...");
+                            ConsoleRead(inputBuf, sizeof(inputBuf));
+                        } else {
+                            int newLen = SimpleStrToInt(inputBuf);
+                            if (newLen >= 0 && newLen < MAX_CATEGORY_LENGTH) {
+                                symbolLength = newLen;
+                            } else {
+                                wsprintfA(displayBuf, "[ERROR] Length must be between 0 and %d!\r\n", MAX_CATEGORY_LENGTH - 1);
+                                ConsoleWrite(displayBuf);
+                                ConsoleWrite("Press Enter to continue...");
+                                ConsoleRead(inputBuf, sizeof(inputBuf));
+                            }
+                        }
+                    }
                     break;
                 }
                 
-                /* Exit options: support both numeric and 'q' for quit */
-                case '8':
-                case 'q':
+                case 8:
                     running = FALSE;
-                    break;
-                    
-                default:
-                    /* Invalid choice: silently ignore and redisplay menu */
                     break;
             }
         }
+        /* If readLen == 0 (empty input/just Enter), silently refresh menu */
     }
     
     /* Clean exit message */

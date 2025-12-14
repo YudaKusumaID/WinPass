@@ -71,7 +71,7 @@ int main() {
         if (isLegacyBatch) {
             /* MODE 1: LEGACY BATCH MODE - single numeric arg without flags */
             int batchLength = SimpleWStrToInt(szArglist[1]);
-            if (batchLength <= 0) batchLength = 16;  /* Fallback to safe default */
+            if (batchLength <= 0) batchLength = DEFAULT_BATCH_LENGTH;  /* Fallback to safe default */
 
             ConsoleWrite("WinPass-Native (Batch Mode)\r\n");
             GenerateCore(batchLength, TRUE); /* Default symbols enabled for batch */
@@ -79,7 +79,10 @@ int main() {
         else {
             /* MODE 2: ADVANCED CLI MODE - parse flags and generate */
             PasswordConfig config;
-            ParseArguments(szArglist, nArgs, &config);
+            if (!ParseArguments(szArglist, nArgs, &config)) {
+                if (szArglist) LocalFree(szArglist);
+                return 1;
+            }
 
             ConsoleWrite("WinPass-Native (Advanced CLI Mode)\r\n");
             GenerateAdvanced(config.letterLength, config.numberLength, config.symbolLength,

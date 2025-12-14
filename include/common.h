@@ -17,6 +17,13 @@
 #include <wincrypt.h>        /**< Cryptographic API for secure random generation */
 #include <shellapi.h>        /**< Command line parsing and clipboard operations */
 
+/* Password length constraints */
+#define MIN_PASSWORD_LENGTH  4      /**< Minimum total password length for security */
+#define MAX_PASSWORD_LENGTH  1024   /**< Maximum total password length */
+#define MAX_CATEGORY_LENGTH  1024   /**< Maximum length per character category */
+#define DEFAULT_BATCH_LENGTH 16     /**< Default password length for batch mode */
+#define MAX_INT_PARSE_VALUE  100000 /**< Maximum value for integer parsing to prevent overflow */
+
 /**
  * @brief Full character set including letters, numbers, and symbols
  * @details Contains 84 characters: [a-z][A-Z][0-9] + common symbols

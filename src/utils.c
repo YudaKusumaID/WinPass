@@ -8,30 +8,44 @@
 #include "../include/utils.h"
 
 /**
- * @brief Converts ASCII string to integer
+ * @brief Converts ASCII string to integer with overflow protection
  * @param str Null-terminated ASCII string
- * @return Parsed integer value
+ * @return Parsed integer value, capped at MAX_INT_PARSE_VALUE
  */
 int SimpleStrToInt(const char* str) {
     int res = 0;
     /* Accumulate digits using base-10 positional notation */
     while ((*str >= '0') && (*str <= '9')) {
-        res = (res * 10) + (*str - '0');  /* Shift previous digits left, add new digit */
+        /* Check for potential overflow before multiplication */
+        if (res > MAX_INT_PARSE_VALUE / 10) {
+            return MAX_INT_PARSE_VALUE;  /* Cap at maximum safe value */
+        }
+        res = (res * 10) + (*str - '0');
+        if (res > MAX_INT_PARSE_VALUE) {
+            return MAX_INT_PARSE_VALUE;  /* Cap if exceeded after addition */
+        }
         str++;
     }
     return res;
 }
 
 /**
- * @brief Converts wide character string to integer
+ * @brief Converts wide character string to integer with overflow protection
  * @param str Null-terminated wide character string
- * @return Parsed integer value
+ * @return Parsed integer value, capped at MAX_INT_PARSE_VALUE
  */
 int SimpleWStrToInt(const WCHAR* str) {
     int res = 0;
     /* Same algorithm as SimpleStrToInt but for WCHAR (L'0' instead of '0') */
     while ((*str >= L'0') && (*str <= L'9')) {
+        /* Check for potential overflow before multiplication */
+        if (res > MAX_INT_PARSE_VALUE / 10) {
+            return MAX_INT_PARSE_VALUE;  /* Cap at maximum safe value */
+        }
         res = (res * 10) + (*str - L'0');
+        if (res > MAX_INT_PARSE_VALUE) {
+            return MAX_INT_PARSE_VALUE;  /* Cap if exceeded after addition */
+        }
         str++;
     }
     return res;

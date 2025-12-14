@@ -23,7 +23,6 @@ void CopyToClipboard(const char* text, int length) {
     if (hGlob) {
         char* pData = (char*)GlobalLock(hGlob);
         if (pData) {
-            /* Manual copy to avoid CRT dependencies */
             for(int i=0; i<length; i++) pData[i] = text[i];
             pData[length] = 0;  /* Null terminator */
             GlobalUnlock(hGlob);
@@ -31,6 +30,9 @@ void CopyToClipboard(const char* text, int length) {
             /* Transfer ownership to clipboard; if successful, don't free hGlob */
             if (!SetClipboardData(CF_TEXT, hGlob)) GlobalFree(hGlob);
             else ConsoleWrite("[INFO] Copied to Clipboard.\r\n");
+        } else {
+            /* GlobalLock failed - must free allocated memory */
+            GlobalFree(hGlob);
         }
     }
     CloseClipboard();
@@ -115,12 +117,18 @@ void GenerateCore(int length, BOOL useSymbols) {
 
     const char* currentCharset = useSymbols ? CHARSET_FULL : CHARSET_ALPHANUM;
     int charsetLen = lstrlenA(currentCharset);
-    char msgBuf[100];
+    /* Buffer sized for max password + formatting overhead */
+    char msgBuf[MAX_PASSWORD_LENGTH + 64];
 
     pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, length);
+    if (!pbBuffer) {
+        PrintError("Memory Error");
+        return;
+    }
+    
     passwordString = (char*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, length + 1);
-
-    if (!pbBuffer || !passwordString) {
+    if (!passwordString) {
+        HeapFree(hHeap, 0, pbBuffer);  /* Clean up first allocation */
         PrintError("Memory Error");
         return;
     }
@@ -164,7 +172,8 @@ void GenerateAdvanced(int letterCount, int numberCount, int symbolCount,
     HANDLE hHeap = GetProcessHeap();
     BYTE* pbBuffer = NULL;
     char* passwordString = NULL;
-    char msgBuf[256];
+    /* Buffer sized for max password + formatting overhead */
+    char msgBuf[MAX_PASSWORD_LENGTH + 128];
 
     /* Validate that at least one category is enabled */
     if (!useLetters && !useNumbers && !useSymbols) {
@@ -189,10 +198,25 @@ void GenerateAdvanced(int letterCount, int numberCount, int symbolCount,
         return;
     }
 
-    pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength);
-    passwordString = (char*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength + 1);
+    /* Validate minimum password length for security */
+    if (totalLength < MIN_PASSWORD_LENGTH) {
+        wsprintfA(msgBuf, "\r\n[ERROR] Password length must be at least %d characters!\r\n", MIN_PASSWORD_LENGTH);
+        ConsoleWrite(msgBuf);
+        ConsoleWrite("Press Enter to continue...");
+        char dummy[10];
+        ConsoleRead(dummy, sizeof(dummy));
+        return;
+    }
 
-    if (!pbBuffer || !passwordString) {
+    pbBuffer = (BYTE*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength);
+    if (!pbBuffer) {
+        PrintError("Memory Error");
+        return;
+    }
+    
+    passwordString = (char*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, totalLength + 1);
+    if (!passwordString) {
+        HeapFree(hHeap, 0, pbBuffer);  /* Clean up first allocation */
         PrintError("Memory Error");
         return;
     }
